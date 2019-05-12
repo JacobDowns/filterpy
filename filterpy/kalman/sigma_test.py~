@@ -1,0 +1,5 @@
+import numpy as np
+from sigmas import SigmaPoints
+
+points = SigmaPoints()
+X, wm, wc = points.get_set(np.zeros(3), np.eye(3), 'julier')

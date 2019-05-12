@@ -2,7 +2,7 @@ import numpy as np
 #from scipy.linalg import cholesky
 from numpy.linalg import cholesky, inv
 
-class SigmaPoints(object):
+class TutSigmaPoints(object):
     
     """
     Generates sigma points and weights according according to one of 

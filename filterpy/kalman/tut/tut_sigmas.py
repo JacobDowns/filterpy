@@ -2,7 +2,7 @@ import numpy as np
 #from scipy.linalg import cholesky
 from numpy.linalg import cholesky, inv
 
-class SigmaPoints(object):
+class TutSigmaPoints(object):
     
     """
     Generates sigma points and weights according according to one of 
@@ -48,15 +48,16 @@ class SigmaPoints(object):
             
         # Available sigma point sets
         self.sigma_functions = {}
-        self.sigma_functions['mwer'] = self.__get_set_mwer__
+        self.sigma_functions['merwe'] = self.__get_set_merwe__
         self.sigma_functions['menegaz'] = self.__get_set_menegaz__
         self.sigma_functions['li'] = self.__get_set_li__
         self.sigma_functions['mysovskikh'] = self.__get_set_mysovskikh__
         self.sigma_functions['gauss'] = self.__get_set_gauss__
         self.sigma_functions['julier'] = self.__get_set_julier__
+        self.sigma_functions['simplex'] = self.__get_set_simplex__
         
          
-    def get_set(self, x, Px, set_name, *scale_args):
+    def get_set(self, x, Px, set_name, **scale_args):
 
         """ 
         Computes the sigma points for and weights for the unscented
@@ -109,7 +110,7 @@ class SigmaPoints(object):
         n = len(x)
             
         # Get sigma points for N(0, I)
-        X, wm, wc = self.sigma_functions[set_name](n, *scale_args)
+        X, wm, wc = self.sigma_functions[set_name](n, **scale_args)
         #print(X)
         #print()
         #print(wm)
@@ -121,7 +122,7 @@ class SigmaPoints(object):
         return X, wm, wc
 
 
-    def __get_set_mwer__(self, n, *scale_args):
+    def __get_set_merwe__(self, n, **scale_args):
         """
         Generates sigma points and weights according Van der Merwe's
         2004 dissertation[1]. Scaling parameters include alpha, beta, and 
@@ -175,7 +176,7 @@ class SigmaPoints(object):
         
 
         ### Sigma points
-        X = np.sqrt(n + kappa)*np.block([np.zeros(n), np.eye(n), -np.eye(n)])
+        X = np.sqrt(n + lambda_)*np.block([np.zeros(n)[:,None], np.eye(n), -np.eye(n)])
 
         
         ### Weights
@@ -185,10 +186,10 @@ class SigmaPoints(object):
         wm[0] =  lambda_ / (n + lambda_)
         wc[0] = lambda_ / (n + lambda_) + (1. - alpha**2 + beta)
         
-        return X.T, wm, wc
+        return X, wm, wc
 
 
-    def __get_set_julier__(self, n, *scale_args):
+    def __get_set_julier__(self, n, **scale_args):
         """
         Generates sigma points and weights according Julier's 1997 paper [1]. 
 
@@ -227,8 +228,8 @@ class SigmaPoints(object):
 
         
         kappa = 3. - n
-        if len(scale_args) >  1:
-            kappa = scale_args[0]
+        if 'kappa' in scale_args:
+            kappa = scale_args['kappa']
         
 
         # Sigma points
@@ -317,8 +318,8 @@ class SigmaPoints(object):
 
         w0 = 0.5
         # If the first weight is defined
-        if 'w0' in args:
-            w0 = args['w0']
+        if 'w0' in scale_args:
+            w0 = scale_args['w0']
             if w0 >= 1.0 or w0 <= 0.0:
                 raise ValueError("w0 must be between 0 and 1")
 
@@ -342,7 +343,58 @@ class SigmaPoints(object):
         w[0] = w0
         w[1:] = np.diag(W, 0)
 
-        return X, w, w
+        return X.T, w, w
+
+
+    def __get_set_simplex__(self, n, **scale_args):
+        """
+        Generates sigma points and weights according to the simplex
+        method presented in [1].
+
+         Parameters
+        ----------
+
+        n : int
+            Dimensionality of the state. n+1 points will be generated.
+
+        Returns
+        -------
+
+        X : np.array, of size (n, n+1)
+            Two dimensional array of sigma points. Each column is a sigma 
+            point.
+
+        wm : np.array
+            weight for each sigma point for the mean
+
+        wc : np.array
+            weight for each sigma point for the covariance
+
+
+        References
+        ----------
+
+        .. [1] Phillippe Moireau and Dominique Chapelle "Reduced-Order
+           Unscented Kalman Filtering with Application to Parameter
+           Identification in Large-Dimensional Systems"
+           DOI: 10.1051/cocv/2010006
+        """
+
+
+        # Generate sigma points
+        lambda_ = n / (n + 1)
+        Istar = np.array([[-1/np.sqrt(2*lambda_), 1/np.sqrt(2*lambda_)]])
+        for d in range(2, n+1):
+            row = np.ones((1, Istar.shape[1] + 1)) * 1. / np.sqrt(lambda_*d*(d + 1))
+            row[0, -1] = -d / np.sqrt(lambda_ * d * (d + 1))
+            Istar = np.r_[np.c_[Istar, np.zeros((Istar.shape[0]))], row]
+
+        X = np.sqrt(n)*Istar
+
+        # Generate weights
+        wm = np.full(n + 1, lambda_)
+        
+        return X, wm, wm
 
 
     def __get_set_li__(self, n, **scale_args):
@@ -492,7 +544,3 @@ class SigmaPoints(object):
         w = np.block([w0, np.repeat(w1, 2*len(A)), np.repeat(w2, 2*len(B))])
         
         return X.T, w, w
-
-
-
-points = SigmaPoints()
