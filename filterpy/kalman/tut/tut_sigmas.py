@@ -1,6 +1,7 @@
 import numpy as np
 #from scipy.linalg import cholesky
 from numpy.linalg import cholesky, inv
+from itertools import combinations
 
 class TutSigmaPoints(object):
     
@@ -55,6 +56,7 @@ class TutSigmaPoints(object):
         self.sigma_functions['gauss'] = self.__get_set_gauss__
         self.sigma_functions['julier'] = self.__get_set_julier__
         self.sigma_functions['simplex'] = self.__get_set_simplex__
+        self.sigma_functions['hermite'] = self.__get_set_hermite__
         
          
     def get_set(self, x, Px, set_name, **scale_args):
@@ -108,14 +110,8 @@ class TutSigmaPoints(object):
 
         # State dimension
         n = len(x)
-            
         # Get sigma points for N(0, I)
         X, wm, wc = self.sigma_functions[set_name](n, **scale_args)
-        #print(X)
-        #print()
-        #print(wm)
-        #print(len(X))
-        
         # Change variables to get sigma points for N(x, Px)
         X = self.add(x[:,None].repeat(X.shape[1], axis = 1), self.sqrt(Px)@X)
 
@@ -481,7 +477,71 @@ class TutSigmaPoints(object):
         return X.T, w, w
 
 
-    def __get_set_mysovskikh__(self, n, **args):
+    def __get_set_hermite__(self, n, **args):
+        """
+        Computes the sigma points and weights for the third degree Gauss hermite
+        quadrature rule. 
+
+        Parameters
+        ----------
+
+        n : int
+            Dimensionality of the state. n^2 + 3n + 3 points will be generated.
+
+        Returns
+        -------
+
+        X : np.array, of size (n, 2^n)
+            Two dimensional array of sigma points. Each column is a sigma 
+            point.
+
+        wm : np.array
+            weight for each sigma point for the mean
+
+        wc : np.array
+            weight for each sigma point for the covariance
+
+        References
+        ----------
+
+        .. [1] J. Lu and D.L. Darmofal "Higher-dimensional integration 
+           with gaussian weight for applications in probabilistic design" 
+        """
+
+        ### Generate sigma points
+        
+        # First set of points
+        I = (np.arange(n)[:,None] + 1).repeat(n + 1, axis = 1).T
+        R = (np.arange(n + 1) + 1)[:,None].repeat(n, axis = 1)
+        A = -np.sqrt((n+1.) / (n*(n-I+2.)*(n-I+1.)))
+        indexes = (I == R)
+        A[indexes] = np.sqrt( ((n+1.)*(n-R[indexes]+1.)) / (n*(n-R[indexes]+2.)))
+        indexes = I > R
+        A[indexes] = 0.
+        
+
+        # Second set of points
+        ls = np.arange(n+1)[:,None].repeat(n+1)
+        ks = (np.arange(n+1)[:,None].repeat(n+1, axis = 1).T).flatten() 
+        indexes = ks < ls
+        B = np.sqrt(n / (2.*(n-1.)))*(A[ks[indexes]] + A[ls[indexes]])
+
+        # Full set
+        #X = np.sqrt(n + 2.)*np.block([[np.zeros(n)], [A], [-A], [B], [-B]])
+        X = np.block([[np.zeros(n)], [A], [-A], [B], [-B]])
+
+
+        ### Generate weights
+        
+        w0 = 2./(n+2.)
+        w1 = (n**2 * (7. - n)) / (2.*(n + 1.)**2 * (n+2.)**2)
+        w2 = (2.*(n-1.)**2) / ((n+1.)**2 * (n+2.)**2)
+        w = np.block([w0, np.repeat(w1, 2*len(A)), np.repeat(w2, 2*len(B))])
+        
+        return X.T, w, w
+
+
+    def __get_set_mysovskikh__(self, n, **scale_args):
         """
         Computes the sigma points and weights for a fifth order cubature 
         rule due to Mysovskikh, and outlined in Lu and Darmofal [1]. 
@@ -544,3 +604,25 @@ class TutSigmaPoints(object):
         w = np.block([w0, np.repeat(w1, 2*len(A)), np.repeat(w2, 2*len(B))])
         
         return X.T, w, w
+
+
+    def __get_set_hermite__(self, n, **scale_args):
+        indexes = range(n)
+
+        # Generate sigma points
+        X1 = np.zeros((n, 2**n - 1))
+        r = 0
+        for i in range(n):
+            comb = combinations(indexes, i+1)
+            for c in list(comb): 
+                print(c)
+                X1[c, r] = np.sqrt(3)
+                r += 1
+        X = np.block([np.zeros(n)[:,None], X1, -X1])
+
+        # Generate weights
+
+        # weight categories
+        
+        print(X)
+        quit()
