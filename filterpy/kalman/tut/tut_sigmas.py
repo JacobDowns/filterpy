@@ -432,8 +432,8 @@ class TutSigmaPoints(object):
 
         r = np.sqrt(3./2.)
         # If the first weight is defined
-        if 'r' in args:
-            r = args['r']
+        if 'r' in scale_args:
+            r = slace_args['r']
             if n < 5 or abs(n - r**2 - 1.) < 1e-16:
                 raise ValueError("This method requires n>4 and n - r^2 - 1 != 0")
         
@@ -441,28 +441,28 @@ class TutSigmaPoints(object):
         ### Generate Weights
 
         # Coordinate for the first symmetric set
-        r1 = (r*np.sqrt(N-4.))/np.sqrt(N - r**2 - 1.)
+        r1 = (r*np.sqrt(n-4.))/np.sqrt(n - r**2 - 1.)
         # First symmetric set weight
-        w2 = (4. - N) / (2. * r1**4)
+        w2 = (4. - n) / (2. * r1**4)
         # Second symmetric set weight
         w3 = 1. / (4. * r**4)
         # Center point weight
-        w1 = 1. - 2.*N*w2 - 2.*N*(N-1)*w3
+        w1 = 1. - 2.*n*w2 - 2.*n*(n-1)*w3
         # Vector of weights
-        w = np.block([w1, np.repeat(w2, 2*N), np.repeat(w3, 2*N*(N-1))])
+        w = np.block([w1, np.repeat(w2, 2*n), np.repeat(w3, 2*n*(n-1))])
 
 
         ### Generate Points
         
         # First fully symmetric set
-        X0 = r1*np.eye(N)
+        X0 = r1*np.eye(n)
         X0_s = np.block([X0, -X0])
         
         # Second fully symmetric set
-        X1 = r*np.eye(N)
+        X1 = r*np.eye(n)
         indexes_i = []
         indexes_j = []
-        for i in range(1,N):
+        for i in range(1,n):
             indexes_i.append(np.repeat([i],i))
             indexes_j.append(np.arange(0,i))
         indexes_i = np.concatenate(indexes_i).ravel()
@@ -471,10 +471,16 @@ class TutSigmaPoints(object):
         P2 = X1[indexes_i, :].T - X1[indexes_j, :].T
         X1_s = np.block([P1, P2, -P1, -P2])
 
+        print(P1)
+        print()
+        print(P2)
+        for i in range(P2.shape[1]):
+            print(P2[:,i])
+        quit()
         # Full set of points (columns are points)
-        X = np.block([np.zeros(N)[:,None], X0_s, X1_s])
+        X = np.block([np.zeros(n)[:,None], X0_s, X1_s])
 
-        return X.T, w, w
+        return X, w, w
 
 
     def __get_set_hermite__(self, n, **args):
@@ -609,20 +615,20 @@ class TutSigmaPoints(object):
     def __get_set_hermite__(self, n, **scale_args):
         indexes = range(n)
 
-        # Generate sigma points
-        X1 = np.zeros((n, 2**n - 1))
+        # Sigma points
+        X = np.zeros((n, 2**(n+1) - 1))
+        # Weights
+        wm = np.zeros(2**(n+1) - 1)
+        wm[0] = (2./3.)**n
         r = 0
-        for i in range(n):
-            comb = combinations(indexes, i+1)
+        for i in range(1, n+1):
+            comb = combinations(indexes, i)
+            w = (2./3.)**(n-i) * (1./6.)**i
             for c in list(comb): 
-                print(c)
-                X1[c, r] = np.sqrt(3)
+                X[c, 2*r+1] = np.sqrt(3)
+                X[c, 2*r+2] = -np.sqrt(3)
+                wm[2*r+1] = w
+                wm[2*r+2] = w
                 r += 1
-        X = np.block([np.zeros(n)[:,None], X1, -X1])
 
-        # Generate weights
-
-        # weight categories
-        
-        print(X)
-        quit()
+        return X, wm, wm
