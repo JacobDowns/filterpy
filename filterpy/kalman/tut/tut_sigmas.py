@@ -1,7 +1,7 @@
 import numpy as np
 #from scipy.linalg import cholesky
 from numpy.linalg import cholesky, inv
-from itertools import combinations
+from itertools import combinations, product
 
 class TutSigmaPoints(object):
     
@@ -613,22 +613,28 @@ class TutSigmaPoints(object):
 
 
     def __get_set_hermite__(self, n, **scale_args):
+
         indexes = range(n)
-
         # Sigma points
-        X = np.zeros((n, 2**(n+1) - 1))
+        X = np.zeros((n, 3**n))
         # Weights
-        wm = np.zeros(2**(n+1) - 1)
+        wm = np.zeros(3**n)
         wm[0] = (2./3.)**n
-        r = 0
+        
+        indexes = np.arange(n)
+        r = 1
         for i in range(1, n+1):
-            comb = combinations(indexes, i)
             w = (2./3.)**(n-i) * (1./6.)**i
-            for c in list(comb): 
-                X[c, 2*r+1] = np.sqrt(3)
-                X[c, 2*r+2] = -np.sqrt(3)
-                wm[2*r+1] = w
-                wm[2*r+2] = w
-                r += 1
+            index_combs = combinations(indexes, i)
+            for index_comb in list(index_combs):
+                signs = np.ones((i,2))
+                signs[:,1] = -1.
+                sign_combs = product(*signs)
+                for sign_comb in list(sign_combs):  
+                    X[index_comb, r] = np.sqrt(3.)
+                    X[index_comb, r] *= sign_comb
+                    wm[r] = w
+                    r += 1
 
+        
         return X, wm, wm
