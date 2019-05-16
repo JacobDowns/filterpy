@@ -4,13 +4,6 @@ from sigma_transform import SigmaTransform
 
 indexes = np.arange(8)
 from itertools import combinations, product
-from numba import jit
-
-#@jit
-def f(n):
-    index_combs = combinations(indexes, 10)
-    for c in list(index_combs):
-        pass
 
 f(40)
 

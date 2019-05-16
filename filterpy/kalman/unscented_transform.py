@@ -21,7 +21,7 @@ import numpy as np
 
 def unscented_transform(sigmas, Wm, Wc, noise_cov=None,
                         mean_fn=None, residual_fn=None):
-    r"""
+    """
     Computes unscented transform of a set of sigma points and weights.
     returns the mean and covariance in a tuple.
 

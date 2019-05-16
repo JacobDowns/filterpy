@@ -111,7 +111,7 @@ class TutSigmaPoints(object):
         # Sigma point set
         set_name = 'merwe'
         if 'set_name' in sigma_args:
-            set_name = sigma_args['merwe']
+            set_name = sigma_args['set_name']
             sigma_args.pop('set_name')
 
         # State dimension

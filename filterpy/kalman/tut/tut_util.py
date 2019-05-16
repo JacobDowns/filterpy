@@ -34,7 +34,7 @@ def generate_fully_symmetric_set(n, vals):
         signs[:,1] = -1.
         sign_combs = product(*signs)
         for sign_comb in list(sign_combs):  
-            S[index_comb, i] = np.sqrt(3.)
+            S[index_comb, i] = vals
             S[index_comb, i] *= sign_comb
             i += 1
             
