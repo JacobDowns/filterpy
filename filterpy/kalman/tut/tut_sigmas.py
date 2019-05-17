@@ -51,7 +51,7 @@ class TutSigmaPoints(object):
         self.sigma_functions = {}
         self.sigma_functions['merwe'] = self.__get_set_merwe__
         self.sigma_functions['menegaz'] = self.__get_set_menegaz__
-        self.sigma_functions['li'] = self.__get_set_li__
+        self.sigma_functions['zm'] = self.__get_set_zm__
         self.sigma_functions['mysovskikh'] = self.__get_set_mysovskikh__
         self.sigma_functions['gauss'] = self.__get_set_gauss__
         self.sigma_functions['julier'] = self.__get_set_julier__
@@ -432,7 +432,7 @@ class TutSigmaPoints(object):
         References
         ----------
 
-        .. [1] Z. Li et al. "A Novel Fifth-Degree Cubature Kalman Filter 
+        .. [1] Li, Z. et al. "A Novel Fifth-Degree Cubature Kalman Filter 
            for Real-Time Orbit Determination by Radar" 
         """
 
@@ -441,10 +441,10 @@ class TutSigmaPoints(object):
         if 'r' in scale_args:
             r = slace_args['r']
             if n < 5 or abs(n - r**2 - 1.) < 1e-16:
-                raise ValueError("This method requires n>4 and n - r^2 - 1 != 0")
+                raise ValueError("This method requires n>=4 and n - r^2 - 1 != 0")
         
 
-        ### Generate Weights
+        # Weights
 
         # Coordinate for the first symmetric set
         r1 = (r*np.sqrt(n-4.))/np.sqrt(n - r**2 - 1.)
@@ -458,7 +458,7 @@ class TutSigmaPoints(object):
         w = np.block([w1, np.repeat(w2, 2*n), np.repeat(w3, 2*n*(n-1))])
 
 
-        ### Generate Points
+        # Points
         
         # First fully symmetric set
         X0 = r1*np.eye(n)
@@ -477,12 +477,7 @@ class TutSigmaPoints(object):
         P2 = X1[indexes_i, :].T - X1[indexes_j, :].T
         X1_s = np.block([P1, P2, -P1, -P2])
 
-        print(P1)
-        print()
-        print(P2)
-        for i in range(P2.shape[1]):
-            print(P2[:,i])
-        quit()
+
         # Full set of points (columns are points)
         X = np.block([np.zeros(n)[:,None], X0_s, X1_s])
 
@@ -540,12 +535,9 @@ class TutSigmaPoints(object):
         B = np.sqrt(n / (2.*(n-1.)))*(A[ks[indexes]] + A[ls[indexes]])
 
         # Full set
-        #X = np.sqrt(n + 2.)*np.block([[np.zeros(n)], [A], [-A], [B], [-B]])
         X = np.block([[np.zeros(n)], [A], [-A], [B], [-B]])
 
-
         ### Generate weights
-        
         w0 = 2./(n+2.)
         w1 = (n**2 * (7. - n)) / (2.*(n + 1.)**2 * (n+2.)**2)
         w2 = (2.*(n-1.)**2) / ((n+1.)**2 * (n+2.)**2)
@@ -555,6 +547,36 @@ class TutSigmaPoints(object):
 
 
     def __get_set_hermite__(self, n, **scale_args):
+        """
+        Computes the sigma points and weights for the third order Gauss
+        Hermite method. 
+
+        Parameters
+        ----------
+
+        n : int
+            Dimensionality of the state. 3^n points will be generated.
+
+        Returns
+        -------
+
+        X : np.array, of size (n, 3^n)
+            Two dimensional array of sigma points. Each column is a sigma 
+            point.
+
+        wm : np.array
+            weight for each sigma point for the mean
+
+        wc : np.array
+            weight for each sigma point for the covariance
+
+        References
+        ----------
+
+        .. [1] Peng, Lijun et al.  "A New Sparse Gauss-Hermite Cubature 
+        Rule Based on Relative-Weight-Ratios for Bearing-Ranging Target
+        Tracking" 
+        """
 
         indexes = range(n)
         # Sigma points
@@ -578,5 +600,4 @@ class TutSigmaPoints(object):
                     wm[r] = w
                     r += 1
 
-        
         return X, wm, wm
