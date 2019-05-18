@@ -51,7 +51,7 @@ class TutSigmaPoints(object):
         self.sigma_functions = {}
         self.sigma_functions['merwe'] = self.__get_set_merwe__
         self.sigma_functions['menegaz'] = self.__get_set_menegaz__
-        self.sigma_functions['zm'] = self.__get_set_zm__
+        self.sigma_functions['li'] = self.__get_set_li__
         self.sigma_functions['mysovskikh'] = self.__get_set_mysovskikh__
         self.sigma_functions['gauss'] = self.__get_set_gauss__
         self.sigma_functions['julier'] = self.__get_set_julier__
@@ -102,6 +102,10 @@ class TutSigmaPoints(object):
 
         if np.isscalar(x):
             x = np.asarray([x])
+            n = 1
+        else:
+            # State dimension
+            n = len(x)
 
         if  np.isscalar(Px):
             Px = np.eye(n)*Px
@@ -114,8 +118,6 @@ class TutSigmaPoints(object):
             set_name = sigma_args['set_name']
             sigma_args.pop('set_name')
 
-        # State dimension
-        n = len(x)
         # Get sigma points for N(0, I)
         X, wm, wc = self.sigma_functions[set_name](n, **sigma_args)
         # Change variables to get sigma points for N(x, Px)
