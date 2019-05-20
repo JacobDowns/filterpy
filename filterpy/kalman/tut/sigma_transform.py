@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tut_sigmas import TutSigmaPoints
+from filterpy.kalman.tut.tut_sigmas import TutSigmaPoints
+
 
 class SigmaTransform(object):
     """
@@ -36,7 +37,6 @@ class SigmaTransform(object):
     # Do an unscented transform 
     def do_transform(self, x, Px, f, mean_fn=None, residual_x=None,
                      residual_y=None, **sigma_args):
-
         """ 
         Estimates mean, covariance, and cross-covariance for a nonlinear
         transformation f : R^n -> R^m
@@ -96,6 +96,19 @@ class SigmaTransform(object):
 
         .. [1] https://nbviewer.jupyter.org/github/sbitzer/UKF-exposed/blob/master/UKF.ipynb
         """
+
+        if np.isscalar(x):
+            x = np.asarray([x])
+            n = 1
+        else:
+            # State dimension
+            n = len(x)
+
+        if  np.isscalar(Px):
+            Px = np.eye(n)*Px
+        else:
+            Px = np.atleast_2d(Px)
+
         
         # Get sigma points
         X, wm, wc = self.points.get_set(x, Px, **sigma_args)
@@ -136,4 +149,58 @@ class SigmaTransform(object):
                 Pxy += wc[k] * np.outer(rx, ry)
 
         return y, Py, Pxy, X, wm, wc  
+
+
+    
+    def get_conditional(self, x, Px, y, Py, Pxy, yo, Pyo):
+        """ 
+        Computes the conditional distribution x|y_m from the given the joint distribution
+        [x, y] ~ N([x, mu], [[Px, Pxy], [Pxy^T, Py]])
+
+        Parameters
+        ----------
+
+        x : numpy.array(n)
+            Prior mean vector
+
+        Px : numpy.array(n,n) 
+            Prior covariance matrix
+
+        y : numpy.array(m)
+            Measurement mean
+
+        Py : numpy.array(m,m) 
+            Measurement covariance
+
+        Pxy : numpy.array(n, m) 
+            Cross covariance
+
+        ym : numpy.array(m) 
+            Observation mean 
+
+        Pyo : numpy.array(m,m) 
+            Observation covariance 
+
+        Returns
+        -------
+
+        x_new : np.array(n)
+            Mean of conditional distribution for x
+
+        Px_new : np.array(n,n)
+            Covariance of conditional distribution for x
+
+        """
+
+        # Add measurement noise
+        Py1 = Py + Pyo
+        # Kalman gain 
+        K = Pxy@np.linalg.inv(Py)
         
+        x_prime = x + K@(yo - y)
+        Px_prime = Px - K@Py1@K.T
+
+        return x_prime, Px_prime
+
+    
+       

@@ -53,7 +53,7 @@ class SigmaTransform(object):
         if noise_cov is not None:
             Py += noise_cov
 
-        return y, Py
+        return y, Py, Pxy
 
 
        
