@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from filterpy.kalman.tut.tut_sigmas import TutSigmaPoints
+from filterpy.kalman.tut.tut_normal import TutNormal
 
 
 class SigmaTransform(object):
@@ -148,7 +149,11 @@ class SigmaTransform(object):
                 rx = residual_x(X[k], x)
                 Pxy += wc[k] * np.outer(rx, ry)
 
-        return y, Py, Pxy, X, wm, wc  
+        joint_mean = np.block([x,y])
+        joint_cov = np.block([[Px, Pxy],[Pxy.T, Py]])
+        joint_dist = TutNormal(joint_mean, joint_cov)
+        
+        return joint_dist, X, wm, wc  
 
 
     
@@ -194,8 +199,10 @@ class SigmaTransform(object):
 
         # Add measurement noise
         Py1 = Py + Pyo
-        # Kalman gain 
+        # Kalman gain
+        print(Pxy)
         K = Pxy@np.linalg.inv(Py)
+        print("K", K)
         
         x_prime = x + K@(yo - y)
         Px_prime = Px - K@Py1@K.T
