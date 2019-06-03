@@ -1,5 +1,4 @@
 import numpy as np
-#from scipy.linalg import cholesky
 from numpy.linalg import cholesky, inv
 from itertools import combinations, product
 
@@ -580,26 +579,11 @@ class TutSigmaPoints(object):
         Tracking" 
         """
 
-        indexes = range(n)
         # Sigma points
-        X = np.zeros((n, 3**n))
-        # Weights
-        wm = np.zeros(3**n)
-        wm[0] = (2./3.)**n
-        
-        indexes = np.arange(n)
-        r = 1
-        for i in range(1, n+1):
-            w = (2./3.)**(n-i) * (1./6.)**i
-            index_combs = combinations(indexes, i)
-            for index_comb in list(index_combs):
-                signs = np.ones((i,2))
-                signs[:,1] = -1.
-                sign_combs = product(*signs)
-                for sign_comb in list(sign_combs):  
-                    X[index_comb, r] = np.sqrt(3.)
-                    X[index_comb, r] *= sign_comb
-                    wm[r] = w
-                    r += 1
+        X = np.array(np.meshgrid(*[[0., 1. , -1.]]*n)).T.reshape(-1, n).T
+        # Mean and covariance weights
+        js = (X**2).sum(axis = 0)
+        wm = (2./3.)**(n-js) * (1./6.)**(js)
+        wc = (2./3.)**(n-js) * (1./6.)**(js)
 
         return X, wm, wm
